@@ -1,65 +1,265 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import UserDetailsForm from "@/components/forms/UserDetailsForm";
+import WorkoutPlan from "@/components/plan/WorkoutPlan";
+import DietPlan from "@/components/plan/DietPlan";
+import AITips from "@/components/plan/AITips";
+import PlanActions from "@/components/plan/PlanActions";
+import ImageModal from "@/components/ImageModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FitnessPlan, UserFormData } from "@/lib/types";
+import { savePlan, getCurrentPlan } from "@/lib/storage";
+import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
+import jsPDF from "jspdf";
 
 export default function Home() {
+  const [currentPlan, setCurrentPlan] = useState<FitnessPlan | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showForm, setShowForm] = useState(true);
+  const [imageModal, setImageModal] = useState<{ isOpen: boolean; prompt: string; title: string }>({
+    isOpen: false,
+    prompt: "",
+    title: "",
+  });
+  const [motivationQuote, setMotivationQuote] = useState<string>("");
+
+  useEffect(() => {
+    const saved = getCurrentPlan();
+    if (saved) {
+      setCurrentPlan(saved);
+      setShowForm(false);
+    }
+    loadMotivationQuote();
+  }, []);
+
+  const loadMotivationQuote = async () => {
+    try {
+      const response = await fetch("/api/motivation");
+      const data = await response.json();
+      if (data.success) {
+        setMotivationQuote(data.data.quote);
+      }
+    } catch (error) {
+      console.error("Error loading motivation:", error);
+    }
+  };
+
+  const handleFormSubmit = async (userData: UserFormData) => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate plan");
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setCurrentPlan(data.data);
+        savePlan(data.data);
+        setShowForm(false);
+        toast.success("Your personalized fitness plan is ready!");
+      }
+    } catch (error) {
+      console.error("Error generating plan:", error);
+      toast.error("Failed to generate fitness plan. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRegenerate = () => {
+    setCurrentPlan(null);
+    setShowForm(true);
+  };
+
+  const handleExerciseClick = (exerciseName: string) => {
+    setImageModal({
+      isOpen: true,
+      prompt: exerciseName,
+      title: exerciseName,
+    });
+  };
+
+  const handleMealClick = (mealName: string) => {
+    setImageModal({
+      isOpen: true,
+      prompt: mealName,
+      title: mealName,
+    });
+  };
+
+  const handleExportPDF = () => {
+    if (!currentPlan) return;
+
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    let yPosition = 20;
+
+    pdf.setFontSize(20);
+    pdf.text("Fitness Plan", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 15;
+
+    pdf.setFontSize(12);
+    pdf.text(`Name: ${currentPlan.userData.name}`, 20, yPosition);
+    yPosition += 10;
+    pdf.text(`Generated: ${new Date(currentPlan.generatedAt).toLocaleDateString()}`, 20, yPosition);
+    yPosition += 15;
+
+    pdf.setFontSize(16);
+    pdf.text("Workout Plan", 20, yPosition);
+    yPosition += 10;
+
+    pdf.setFontSize(10);
+    currentPlan.workoutPlan.workouts.forEach((workout) => {
+      if (yPosition > 270) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      pdf.setFontSize(12);
+      pdf.text(`${workout.day} - ${workout.focus}`, 20, yPosition);
+      yPosition += 7;
+      pdf.setFontSize(10);
+      workout.exercises.forEach((exercise) => {
+        if (yPosition > 270) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.text(`  ${exercise.name}: ${exercise.sets} sets x ${exercise.reps}`, 25, yPosition);
+        yPosition += 6;
+      });
+      yPosition += 5;
+    });
+
+    pdf.addPage();
+    yPosition = 20;
+    pdf.setFontSize(16);
+    pdf.text("Diet Plan", 20, yPosition);
+    yPosition += 10;
+
+    pdf.setFontSize(10);
+    pdf.text(`Daily Calories: ${currentPlan.dietPlan.dailyCalories}`, 20, yPosition);
+    yPosition += 7;
+    pdf.text(`Daily Protein: ${currentPlan.dietPlan.dailyProtein}`, 20, yPosition);
+    yPosition += 10;
+
+    const meals = [
+      { name: "Breakfast", data: currentPlan.dietPlan.meals.breakfast },
+      { name: "Lunch", data: currentPlan.dietPlan.meals.lunch },
+      { name: "Dinner", data: currentPlan.dietPlan.meals.dinner },
+    ];
+
+    meals.forEach((meal) => {
+      if (yPosition > 270) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      pdf.setFontSize(12);
+      pdf.text(`${meal.name}: ${meal.data.name}`, 20, yPosition);
+      yPosition += 7;
+      pdf.setFontSize(10);
+      pdf.text(`Calories: ${meal.data.calories}, Protein: ${meal.data.protein}`, 25, yPosition);
+      yPosition += 10;
+    });
+
+    pdf.save(`FitnessPlan_${currentPlan.userData.name}_${Date.now()}.pdf`);
+    toast.success("PDF exported successfully!");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            AI Fitness Coach
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-muted-foreground text-lg">
+            Your personalized workout and nutrition plan, powered by AI
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        </motion.div>
+
+        {motivationQuote && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-2xl mx-auto mb-8 p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-6 w-6 text-primary flex-shrink-0" />
+              <p className="text-lg font-medium italic">{motivationQuote}</p>
+            </div>
+          </motion.div>
+        )}
+
+        <AnimatePresence mode="wait">
+          {showForm || !currentPlan ? (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <UserDetailsForm onSubmit={handleFormSubmit} isLoading={isGenerating} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="plan"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-8"
+            >
+              <div className="flex justify-center">
+                <PlanActions
+                  plan={currentPlan}
+                  onRegenerate={handleRegenerate}
+                  onExportPDF={handleExportPDF}
+                />
+              </div>
+
+              <Tabs defaultValue="workout" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="workout">Workout Plan</TabsTrigger>
+                  <TabsTrigger value="diet">Diet Plan</TabsTrigger>
+                  <TabsTrigger value="tips">AI Tips</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="workout" className="mt-6">
+                  <WorkoutPlan
+                    workoutPlan={currentPlan.workoutPlan}
+                    onExerciseClick={handleExerciseClick}
+                  />
+                </TabsContent>
+
+                <TabsContent value="diet" className="mt-6">
+                  <DietPlan dietPlan={currentPlan.dietPlan} onMealClick={handleMealClick} />
+                </TabsContent>
+
+                <TabsContent value="tips" className="mt-6">
+                  <AITips tips={currentPlan.tips} motivation={currentPlan.motivation} />
+                </TabsContent>
+              </Tabs>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <ImageModal
+        isOpen={imageModal.isOpen}
+        onClose={() => setImageModal({ ...imageModal, isOpen: false })}
+        prompt={imageModal.prompt}
+        title={imageModal.title}
+      />
+    </main>
   );
 }
