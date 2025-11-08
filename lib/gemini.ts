@@ -1,16 +1,17 @@
 import { UserFormData, FitnessPlan } from "./types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
 
 export async function generateFitnessPlan(userData: UserFormData): Promise<FitnessPlan> {
   const prompt = createFitnessPlanPrompt(userData);
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(GEMINI_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY,
     },
     body: JSON.stringify({
       contents: [
@@ -24,13 +25,18 @@ export async function generateFitnessPlan(userData: UserFormData): Promise<Fitne
       ],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 8000,
+        topP: 0.95,
+        topK: 40,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       },
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`);
+    const errorData = await response.text();
+    throw new Error(`Gemini API error: ${response.statusText} - ${errorData}`);
   }
 
   const data = await response.json();
@@ -136,10 +142,11 @@ Important:
 export async function generateImage(prompt: string): Promise<string> {
   const imagePrompt = `Create a realistic, high-quality image of: ${prompt}. Style: professional fitness photography, well-lit, motivating.`;
 
-  const response = await fetch(`${GEMINI_IMAGE_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(GEMINI_IMAGE_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY,
     },
     body: JSON.stringify({
       contents: [
@@ -151,24 +158,35 @@ export async function generateImage(prompt: string): Promise<string> {
           ],
         },
       ],
+      generationConfig: {
+        responseModalities: ["Image"]
+      },
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini Image API error: ${response.statusText}`);
+    const errorData = await response.text();
+    throw new Error(`Gemini Image API error: ${response.statusText} - ${errorData}`);
   }
 
   const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
+  const imageData = data.candidates[0].content.parts[0];
+
+  if (imageData.inlineData) {
+    return `data:${imageData.inlineData.mimeType};base64,${imageData.inlineData.data}`;
+  }
+
+  throw new Error("No image data returned from Gemini");
 }
 
 export async function generateMotivation(): Promise<string> {
   const prompt = "Generate a short, powerful, and inspiring fitness motivation quote. Make it unique and energizing. Return only the quote, no extra text.";
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(GEMINI_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY,
     },
     body: JSON.stringify({
       contents: [
@@ -182,13 +200,17 @@ export async function generateMotivation(): Promise<string> {
       ],
       generationConfig: {
         temperature: 0.9,
-        maxOutputTokens: 100,
+        topP: 0.95,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       },
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`);
+    const errorData = await response.text();
+    throw new Error(`Gemini API error: ${response.statusText} - ${errorData}`);
   }
 
   const data = await response.json();
