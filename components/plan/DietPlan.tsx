@@ -95,7 +95,7 @@ export default function DietPlan({ dietPlan, onMealClick }: DietPlanProps) {
                         >
                           <h4 className="font-semibold mb-2">{snack.name}</h4>
                           <div className="flex flex-wrap gap-2 mb-2">
-                            {snack.items.map((item, itemIndex) => (
+                            {snack.items.map((item: string, itemIndex: number) => (
                               <span key={itemIndex} className="text-xs bg-secondary px-2 py-1 rounded">
                                 {item}
                               </span>
@@ -152,7 +152,7 @@ export default function DietPlan({ dietPlan, onMealClick }: DietPlanProps) {
                     className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer"
                   >
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {meal.items.map((item, itemIndex) => (
+                      {meal.items.map((item: string, itemIndex: number) => (
                         <span key={itemIndex} className="text-sm bg-secondary px-3 py-1 rounded">
                           {item}
                         </span>
