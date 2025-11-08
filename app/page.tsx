@@ -8,6 +8,7 @@ import DietPlan from "@/components/plan/DietPlan";
 import AITips from "@/components/plan/AITips";
 import PlanActions from "@/components/plan/PlanActions";
 import ImageModal from "@/components/ImageModal";
+import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FitnessPlan, UserFormData } from "@/lib/types";
@@ -175,6 +176,10 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
+        <div className="absolute top-4 right-4 md:top-8 md:right-8">
+          <AnimatedThemeToggler className="h-10 w-10 rounded-full border border-border bg-card hover:bg-accent flex items-center justify-center transition-colors" />
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
