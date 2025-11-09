@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCachedImage, cacheImage } from "@/lib/storage";
@@ -16,20 +16,24 @@ interface ImageModalProps {
 export default function ImageModal({ isOpen, onClose, prompt, title }: ImageModalProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const loadedPromptRef = useRef<string>("");
 
   useEffect(() => {
-    if (isOpen && prompt) {
+    if (isOpen && prompt && loadedPromptRef.current !== prompt) {
       loadImage();
     }
   }, [isOpen, prompt]);
 
   const loadImage = async () => {
+    // Check cache first
     const cached = getCachedImage(prompt);
     if (cached) {
       setImageUrl(cached);
+      loadedPromptRef.current = prompt;
       return;
     }
 
+    // Only generate if we don't have it cached
     setIsLoading(true);
     try {
       const response = await fetch("/api/generate-image", {
@@ -44,6 +48,7 @@ export default function ImageModal({ isOpen, onClose, prompt, title }: ImageModa
       if (data.success && data.data.imageUrl) {
         setImageUrl(data.data.imageUrl);
         cacheImage(prompt, data.data.imageUrl);
+        loadedPromptRef.current = prompt;
       }
     } catch (error) {
       console.error("Error loading image:", error);

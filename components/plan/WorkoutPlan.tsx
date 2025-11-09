@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { WorkoutPlan as WorkoutPlanType } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion } from "framer-motion";
-import { Dumbbell } from "lucide-react";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { Dumbbell, ChevronDown, ChevronUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface WorkoutPlanProps {
   workoutPlan: WorkoutPlanType;
@@ -11,6 +13,12 @@ interface WorkoutPlanProps {
 }
 
 export default function WorkoutPlan({ workoutPlan, onExerciseClick }: WorkoutPlanProps) {
+  const [expandedIndex, setExpandedIndex] = useState<number>(0);
+
+  const toggleExpand = (index: number) => {
+    setExpandedIndex(expandedIndex === index ? -1 : index);
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-primary/10 p-4 rounded-lg">
@@ -20,28 +28,46 @@ export default function WorkoutPlan({ workoutPlan, onExerciseClick }: WorkoutPla
 
       <div className="grid gap-4">
         {workoutPlan.workouts.map((workout, index) => (
-          <motion.div
+          <BlurFade
             key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            delay={index * 0.1}
+            inView
           >
             <Card>
-              <CardHeader>
+              <CardHeader
+                className="cursor-pointer hover:bg-accent/50 transition-colors rounded-t-xl"
+                onClick={() => toggleExpand(index)}
+              >
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="flex items-center gap-2">
                       <Dumbbell className="h-5 w-5" />
                       {workout.day}
                     </CardTitle>
                     <CardDescription>{workout.focus}</CardDescription>
                   </div>
-                  <span className="text-sm font-medium bg-primary/10 px-3 py-1 rounded-full">
-                    {workout.totalDuration}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium bg-primary/10 px-3 py-1 rounded-full">
+                      {workout.totalDuration}
+                    </span>
+                    {expandedIndex === index ? (
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <AnimatePresence>
+                {expandedIndex === index && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <CardContent>
                 <div className="space-y-4">
                   {workout.exercises.map((exercise, exIndex) => (
                     <div
@@ -75,9 +101,12 @@ export default function WorkoutPlan({ workoutPlan, onExerciseClick }: WorkoutPla
                     </div>
                   ))}
                 </div>
-              </CardContent>
+                    </CardContent>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Card>
-          </motion.div>
+          </BlurFade>
         ))}
       </div>
     </div>

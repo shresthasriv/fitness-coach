@@ -2,7 +2,7 @@
 
 import { DietPlan as DietPlanType } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { Utensils, Coffee, Sun, Moon, Apple } from "lucide-react";
 
 interface DietPlanProps {
@@ -65,11 +65,10 @@ export default function DietPlan({ dietPlan, onMealClick }: DietPlanProps) {
         {Object.entries(dietPlan.meals).map(([mealType, mealData], index) => {
           if (Array.isArray(mealData)) {
             return (
-              <motion.div
+              <BlurFade
                 key={mealType}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                delay={index * 0.1}
+                inView
               >
                 <Card>
                   <CardHeader>
@@ -124,7 +123,7 @@ export default function DietPlan({ dietPlan, onMealClick }: DietPlanProps) {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </BlurFade>
             );
           }
 
@@ -132,11 +131,10 @@ export default function DietPlan({ dietPlan, onMealClick }: DietPlanProps) {
           const Icon = mealIcons[mealType as keyof typeof mealIcons];
 
           return (
-            <motion.div
+            <BlurFade
               key={mealType}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              delay={index * 0.1}
+              inView
             >
               <Card>
                 <CardHeader>
@@ -182,7 +180,7 @@ export default function DietPlan({ dietPlan, onMealClick }: DietPlanProps) {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </BlurFade>
           );
         })}
       </div>

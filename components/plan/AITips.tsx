@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { Heart, Activity, Sparkles } from "lucide-react";
 
 interface AITipsProps {
@@ -16,11 +16,7 @@ interface AITipsProps {
 export default function AITips({ tips, motivation }: AITipsProps) {
   return (
     <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+      <BlurFade delay={0} inView>
         <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
@@ -32,14 +28,10 @@ export default function AITips({ tips, motivation }: AITipsProps) {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </BlurFade>
 
       <div className="grid md:grid-cols-3 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <BlurFade delay={0.1} inView>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -58,13 +50,9 @@ export default function AITips({ tips, motivation }: AITipsProps) {
               </ul>
             </CardContent>
           </Card>
-        </motion.div>
+        </BlurFade>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <BlurFade delay={0.2} inView>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -83,13 +71,9 @@ export default function AITips({ tips, motivation }: AITipsProps) {
               </ul>
             </CardContent>
           </Card>
-        </motion.div>
+        </BlurFade>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <BlurFade delay={0.3} inView>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -108,7 +92,7 @@ export default function AITips({ tips, motivation }: AITipsProps) {
               </ul>
             </CardContent>
           </Card>
-        </motion.div>
+        </BlurFade>
       </div>
     </div>
   );

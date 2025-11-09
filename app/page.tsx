@@ -6,15 +6,14 @@ import UserDetailsForm from "@/components/forms/UserDetailsForm";
 import WorkoutPlan from "@/components/plan/WorkoutPlan";
 import DietPlan from "@/components/plan/DietPlan";
 import AITips from "@/components/plan/AITips";
-import PlanActions from "@/components/plan/PlanActions";
 import ImageModal from "@/components/ImageModal";
-import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
+import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { FitnessPlan, UserFormData } from "@/lib/types";
 import { savePlan, getCurrentPlan } from "@/lib/storage";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
 import jsPDF from "jspdf";
 
 export default function Home() {
@@ -175,36 +174,23 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="absolute top-4 right-4 md:top-8 md:right-8">
-          <AnimatedThemeToggler className="h-10 w-10 rounded-full border border-border bg-card hover:bg-accent flex items-center justify-center transition-colors" />
-        </div>
+      <Header
+        plan={currentPlan}
+        onRegenerate={handleRegenerate}
+        onExportPDF={handleExportPDF}
+        motivationQuote={motivationQuote}
+      />
 
+      <div className="container mx-auto px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-8 mt-8"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            AI Fitness Coach
-          </h1>
           <p className="text-muted-foreground text-lg">
             Your personalized workout and nutrition plan, powered by AI
           </p>
         </motion.div>
-
-        {motivationQuote && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl mx-auto mb-8 p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20"
-          >
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-6 w-6 text-primary flex-shrink-0" />
-              <p className="text-lg font-medium italic">{motivationQuote}</p>
-            </div>
-          </motion.div>
-        )}
 
         <AnimatePresence mode="wait">
           {showForm || !currentPlan ? (
@@ -224,15 +210,8 @@ export default function Home() {
               exit={{ opacity: 0 }}
               className="space-y-8"
             >
-              <div className="flex justify-center">
-                <PlanActions
-                  plan={currentPlan}
-                  onRegenerate={handleRegenerate}
-                  onExportPDF={handleExportPDF}
-                />
-              </div>
-
-              <Tabs defaultValue="workout" className="w-full">
+              <BlurFade delay={0} inView>
+                <Tabs defaultValue="workout" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="workout">Workout Plan</TabsTrigger>
                   <TabsTrigger value="diet">Diet Plan</TabsTrigger>
@@ -254,6 +233,7 @@ export default function Home() {
                   <AITips tips={currentPlan.tips} motivation={currentPlan.motivation} />
                 </TabsContent>
               </Tabs>
+              </BlurFade>
             </motion.div>
           )}
         </AnimatePresence>

@@ -13,23 +13,31 @@ interface PlanActionsProps {
 }
 
 export default function PlanActions({ plan, onRegenerate, onExportPDF }: PlanActionsProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [playingSection, setPlayingSection] = useState<"workout" | "diet" | null>(null);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
-  const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const [generatingSection, setGeneratingSection] = useState<"workout" | "diet" | null>(null);
 
-  const handleTextToSpeech = async (section: "workout" | "diet" | "all") => {
-    if (isPlaying && currentAudio) {
+  const handleTextToSpeech = async (section: "workout" | "diet") => {
+    // Stop if currently playing this section
+    if (playingSection === section && currentAudio) {
       currentAudio.pause();
       setCurrentAudio(null);
-      setIsPlaying(false);
+      setPlayingSection(null);
       return;
     }
 
-    setIsGeneratingSpeech(true);
+    // Stop any other audio that's playing
+    if (currentAudio) {
+      currentAudio.pause();
+      setCurrentAudio(null);
+      setPlayingSection(null);
+    }
+
+    setGeneratingSection(section);
     try {
       let text = "";
 
-      if (section === "workout" || section === "all") {
+      if (section === "workout") {
         text += `Workout Plan. ${plan.workoutPlan.weeklySchedule}. `;
         plan.workoutPlan.workouts.forEach((workout) => {
           text += `${workout.day}. ${workout.focus}. `;
@@ -39,7 +47,7 @@ export default function PlanActions({ plan, onRegenerate, onExportPDF }: PlanAct
         });
       }
 
-      if (section === "diet" || section === "all") {
+      if (section === "diet") {
         text += `Diet Plan. Daily calories: ${plan.dietPlan.dailyCalories}. `;
         text += `Breakfast: ${plan.dietPlan.meals.breakfast.name}. `;
         text += `Lunch: ${plan.dietPlan.meals.lunch.name}. `;
@@ -59,20 +67,20 @@ export default function PlanActions({ plan, onRegenerate, onExportPDF }: PlanAct
       const audio = new Audio(audioUrl);
 
       audio.onended = () => {
-        setIsPlaying(false);
+        setPlayingSection(null);
         setCurrentAudio(null);
         URL.revokeObjectURL(audioUrl);
       };
 
       setCurrentAudio(audio);
-      setIsPlaying(true);
+      setPlayingSection(section);
       audio.play();
-      toast.success("Playing your plan");
+      toast.success(`Playing ${section} plan`);
     } catch (error) {
       console.error("Error generating speech:", error);
       toast.error("Failed to generate speech");
     } finally {
-      setIsGeneratingSpeech(false);
+      setGeneratingSection(null);
     }
   };
 
@@ -87,20 +95,20 @@ export default function PlanActions({ plan, onRegenerate, onExportPDF }: PlanAct
         onClick={() => handleTextToSpeech("workout")}
         variant="outline"
         size="lg"
-        disabled={isGeneratingSpeech}
+        disabled={generatingSection !== null}
       >
-        {isPlaying ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
-        {isGeneratingSpeech ? "Generating..." : "Read Workout"}
+        {playingSection === "workout" ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
+        {generatingSection === "workout" ? "Generating..." : playingSection === "workout" ? "Stop Workout" : "Read Workout"}
       </Button>
 
       <Button
         onClick={() => handleTextToSpeech("diet")}
         variant="outline"
         size="lg"
-        disabled={isGeneratingSpeech}
+        disabled={generatingSection !== null}
       >
-        {isPlaying ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
-        {isGeneratingSpeech ? "Generating..." : "Read Diet"}
+        {playingSection === "diet" ? <VolumeX className="h-4 w-4 mr-2" /> : <Volume2 className="h-4 w-4 mr-2" />}
+        {generatingSection === "diet" ? "Generating..." : playingSection === "diet" ? "Stop Diet" : "Read Diet"}
       </Button>
 
       <Button onClick={onRegenerate} variant="outline" size="lg">
